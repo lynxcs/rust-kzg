@@ -74,7 +74,7 @@ impl KzgFr for ArkFr {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut le_bytes: [u8; BYTES_PER_FIELD_ELEMENT] = bytes.clone();
+                let mut le_bytes: [u8; BYTES_PER_FIELD_ELEMENT] = *bytes;
                 le_bytes.reverse();
                 let fr = Fr::deserialize_compressed(le_bytes.as_slice()).unwrap_or_default();
                 Ok(Self { fr })
@@ -236,8 +236,8 @@ impl G1 for ArkG1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let res = &self.proj
-            + &b.proj;
+        let res = self.proj
+            + b.proj;
         Self {proj: res}
     }
 
@@ -255,7 +255,7 @@ impl G1 for ArkG1 {
     }
 
     fn add(&self, b: &Self) -> Self {
-        Self { proj: &self.proj + &b.proj }
+        Self { proj: self.proj + b.proj }
     }
 
     fn sub(&self, b: &Self) -> Self {
@@ -344,7 +344,7 @@ impl G2 for ArkG2 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        Self { proj: &self.proj - b.proj }
+        Self { proj: self.proj - b.proj }
     }
 
     fn equals(&self, b: &Self) -> bool {
