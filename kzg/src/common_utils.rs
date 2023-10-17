@@ -67,7 +67,7 @@ pub fn log_2(x: usize) -> usize {
     if x == 0 {
         return 0;
     }
-    num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
+    num_bits::<usize>()  - (x.leading_zeros() as usize) - 1
 }
 
 pub fn is_power_of_2(n: usize) -> bool {
@@ -270,20 +270,21 @@ pub fn evaluate_polynomial_in_evaluation_form<TG1: G1, TG2: G2, TFr: Fr + Copy, 
 
     let mut inverses_in: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
-
-    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+    let mut new_inverses = vec![Default::default(); inverses_in.len()];
+    for (i, _item) in inverses_in.iter_mut().enumerate().take(FIELD_ELEMENTS_PER_BLOB){
         if x.equals(&s.get_roots_of_unity_at(i)) {
             return Ok(p.get_coeff_at(i));
         }
-        inverses_in[i] = x.sub(&s.get_roots_of_unity_at(i));
+        new_inverses[i] = x.sub(&s.get_roots_of_unity_at(i));
     }
+    inverses_in = new_inverses;
 
     fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
 
     let mut tmp: TFr;
     let mut out = TFr::zero();
 
-    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+    for (i, _item) in inverses.iter().enumerate().take(FIELD_ELEMENTS_PER_BLOB) {
         tmp = inverses[i].mul(&s.get_roots_of_unity_at(i));
         tmp = tmp.mul(&p.get_coeff_at(i));
         out = out.add(&tmp);
@@ -343,7 +344,7 @@ pub fn load_trusted_setup_rust<TFr: Fr, TG1: G1 + PairingVerify<TG1, TG2>, TG2: 
 
     let fs = TFFTSettings::new(max_scale)?;
     reverse_bit_order(&mut g1_values)?;
-    TKZGSettings::new(g1_values.as_slice(), &g2_values.as_slice(), max_scale, &fs)
+    TKZGSettings::new(g1_values.as_slice(), g2_values.as_slice(), max_scale, &fs)
 }
 
 pub fn verify_kzg_proof_rust<TFr: Fr, TG1: G1, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
