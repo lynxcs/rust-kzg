@@ -8,6 +8,7 @@ use core::fmt::Debug;
 
 pub mod common_utils;
 pub mod eip_4844;
+pub mod msm;
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
