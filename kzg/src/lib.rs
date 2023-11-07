@@ -221,6 +221,11 @@ pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>
         Self::add_or_double_assign_affine(&mut proj, aff);
         proj
     }
+
+    fn sub_assign_affine(proj: &mut TG1, mut aff: TG1Affine) {
+        aff.y_mut().neg_assign();
+        Self::add_assign_affine(proj, &aff);
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]

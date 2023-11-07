@@ -5,6 +5,18 @@ use crate::{
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+macro_rules! cfg_into_mut_chunks {
+    ($e: expr, $f: expr) => {{
+        #[cfg(feature = "parallel")]
+        let result = $e.par_chunks_mut($f);
+
+        #[cfg(not(feature = "parallel"))]
+        let result = $e.chunks_mut($f);
+
+        result
+    }};
+}
+
 pub fn parallel_pippinger<
     TG1: G1,
     TG1Fp: G1Fp,
@@ -103,4 +115,143 @@ fn scalar_divn<const N: usize>(input: &mut [u64; N], mut n: u32) {
             t = t2;
         }
     }
+}
+
+// Compute msm using windowed non-adjacent form
+pub fn parallel_pippinger_wnaf<
+    TG1: G1,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+    ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+>(
+    bases: &[TG1Affine],
+    scalars: &[Scalar256],
+) -> TG1 {
+    const NUM_BITS: usize = 255;
+
+    // Limit scalars & bases to lower of the two
+    let size = std::cmp::min(bases.len(), scalars.len());
+    let scalars = &scalars[..size];
+    let bases = &bases[..size];
+
+    let c = if size < 32 {
+        3
+    } else {
+        ((log2_u64(size) * 69 / 100) as usize) + 2
+    };
+
+    let digits_count = (NUM_BITS + c - 1) / c;
+    let mut scalar_digits = vec![0i64; digits_count * scalars.len()];
+    cfg_into_mut_chunks!(scalar_digits, digits_count)
+        .zip(scalars)
+        .for_each(|(chunk , scalar)| {
+            make_digits_into(scalar, c, chunk);
+        });
+    let mut window_sums = vec![TG1::ZERO; digits_count];
+    cfg_into_iter!(&mut window_sums)
+    .enumerate()
+    .for_each(|(i, window_sum)| {
+        let mut buckets = vec![TG1::ZERO; 1 << c];
+        for (digits, base) in scalar_digits.chunks(digits_count).zip(bases) {
+            use core::cmp::Ordering;
+            let scalar = digits[i];
+            match 0.cmp(&scalar) {
+                Ordering::Less => ProjAddAffine::add_assign_affine(&mut buckets[(scalar - 1) as usize], base),
+                Ordering::Greater => ProjAddAffine::sub_assign_affine(&mut buckets[(-scalar - 1) as usize], *base),
+                Ordering::Equal => (),
+            }
+        }
+
+        let mut running_sum = TG1::ZERO;
+        buckets.into_iter().rev().for_each(|b| {
+            running_sum.add_or_dbl_assign(&b);
+            window_sum.add_or_dbl_assign(&running_sum);
+        });
+    });
+
+    let lowest = window_sums.first().unwrap();
+    lowest.add(
+        &window_sums[1..]
+            .iter()
+            .rev()
+            .fold(TG1::ZERO, |mut total, sum_i| {
+                total.add_assign(sum_i);
+                for _ in 0..c {
+                    total.dbl_assign();
+                }
+                total
+            }))
+}
+
+// From: https://github.com/arkworks-rs/gemini/blob/main/src/kzg/msm/variable_base.rs#L20
+fn make_digits(a: &Scalar256, w: usize) -> Vec<i64> {
+    let scalar = &a.data;
+    let radix: u64 = 1 << w;
+    let window_mask: u64 = radix - 1;
+
+    const NUM_BITS: usize = 255;
+    let mut carry = 0u64;
+    let digits_count = (NUM_BITS + w - 1) / w;
+    let mut digits = vec![0i64; digits_count];
+    for (i, digit) in digits.iter_mut().enumerate() {
+        // Construct a buffer of bits of the scalar, starting at `bit_offset`.
+        let bit_offset = i * w;
+        let u64_idx = bit_offset / 64;
+        let bit_idx = bit_offset % 64;
+        // Read the bits from the scalar
+        let bit_buf = if bit_idx < 64 - w || u64_idx == scalar.len() - 1 {
+            // This window's bits are contained in a single u64,
+            // or it's the last u64 anyway.
+            scalar[u64_idx] >> bit_idx
+        } else {
+            // Combine the current u64's bits with the bits from the next u64
+            (scalar[u64_idx] >> bit_idx) | (scalar[1 + u64_idx] << (64 - bit_idx))
+        };
+
+        // Read the actual coefficient value from the window
+        let coef = carry + (bit_buf & window_mask); // coef = [0, 2^r)
+
+        // Recenter coefficients from [0,2^w) to [-2^w/2, 2^w/2)
+        carry = (coef + radix / 2) >> w;
+        *digit = (coef as i64) - (carry << w) as i64;
+    }
+
+    digits[digits_count - 1] += (carry << w) as i64;
+
+    digits
+}
+
+// From: https://github.com/arkworks-rs/gemini/blob/main/src/kzg/msm/variable_base.rs#L20
+fn make_digits_into(a: &Scalar256, w: usize, digits: &mut [i64]) {
+    let scalar = &a.data;
+    let radix: u64 = 1 << w;
+    let window_mask: u64 = radix - 1;
+
+    const NUM_BITS: usize = 255;
+    let mut carry = 0u64;
+    let digits_count = (NUM_BITS + w - 1) / w;
+    for (i, digit) in digits.iter_mut().enumerate() {
+        // Construct a buffer of bits of the scalar, starting at `bit_offset`.
+        let bit_offset = i * w;
+        let u64_idx = bit_offset / 64;
+        let bit_idx = bit_offset % 64;
+        // Read the bits from the scalar
+        let bit_buf = if bit_idx < 64 - w || u64_idx == scalar.len() - 1 {
+            // This window's bits are contained in a single u64,
+            // or it's the last u64 anyway.
+            scalar[u64_idx] >> bit_idx
+        } else {
+            // Combine the current u64's bits with the bits from the next u64
+            (scalar[u64_idx] >> bit_idx) | (scalar[1 + u64_idx] << (64 - bit_idx))
+        };
+
+        // Read the actual coefficient value from the window
+        let coef = carry + (bit_buf & window_mask); // coef = [0, 2^r)
+
+        // Recenter coefficients from [0,2^w) to [-2^w/2, 2^w/2)
+        carry = (coef + radix / 2) >> w;
+        *digit = (coef as i64) - (carry << w) as i64;
+    }
+
+    digits[digits_count - 1] += (carry << w) as i64;
 }

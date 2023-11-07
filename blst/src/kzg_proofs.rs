@@ -24,7 +24,7 @@ use crate::types::{
     g1::{FsG1Affine, FsG1ProjAddAffine},
 };
 #[cfg(feature = "parallel")]
-use kzg::{msm::parallel_pippinger::parallel_pippinger, G1Affine, Scalar256};
+use kzg::{msm::parallel_pippinger::{parallel_pippinger, parallel_pippinger_wnaf}, G1Affine, Scalar256};
 
 impl PairingVerify<FsG1, FsG2> for FsG1 {
     fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
@@ -53,7 +53,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 Scalar256::from_u8(&scalar.b)
             })
             .collect::<Vec<_>>();
-        *out = parallel_pippinger::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
+        *out = parallel_pippinger_wnaf::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
             points.as_slice(),
             &scalars,
         );
