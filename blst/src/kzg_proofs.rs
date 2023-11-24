@@ -44,19 +44,38 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
 
     #[cfg(feature = "parallel")]
     {
-        let points = FsG1Affine::into_affines(points);
-        let scalars = scalars
-            .iter()
-            .map(|b| {
-                let mut scalar = blst_scalar::default();
-                unsafe { blst_scalar_from_fr(&mut scalar, &b.0) }
-                Scalar256::from_u8(&scalar.b)
-            })
-            .collect::<Vec<_>>();
-        *out = parallel_pippinger_wnaf::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
-            points.as_slice(),
-            &scalars,
-        );
+        if false {
+            let points = unsafe { core::slice::from_raw_parts(points.as_ptr() as *const blst::blst_p1, len) };
+            let points = blst::p1_affines::from(points);
+    
+            let mut scalar_bytes: Vec<u8> = Vec::with_capacity(len * 32);
+            for bytes in scalars.iter().map(|b| {
+                let mut scalar = blst::blst_scalar::default();
+    
+                unsafe { blst::blst_scalar_from_fr(&mut scalar, &b.0) }
+    
+                scalar.b
+            }) {
+                scalar_bytes.extend_from_slice(&bytes);
+            }
+    
+            let res = points.mult(scalar_bytes.as_slice(), 255);
+            *out = FsG1(res)
+        } else {
+            let points = FsG1Affine::into_affines(points);
+            let scalars = scalars
+                .iter()
+                .map(|b| {
+                    let mut scalar = blst_scalar::default();
+                    unsafe { blst_scalar_from_fr(&mut scalar, &b.0) }
+                    Scalar256::from_u8(&scalar.b)
+                })
+                .collect::<Vec<_>>();
+            *out = parallel_pippinger_wnaf::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
+                points.as_slice(),
+                &scalars,
+            );
+        }
     }
 
     #[cfg(not(feature = "parallel"))]

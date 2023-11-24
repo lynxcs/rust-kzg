@@ -1,9 +1,51 @@
+use std::sync::mpsc::channel;
+
 use crate::{
-    cfg_into_iter, common_utils::log2_u64, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1,
+    cfg_into_iter, common_utils::log2_u64, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1, msm::batch_adder::{self, BatchAdder},
 };
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+
+trait ThreadPoolExt {
+    fn joined_execute<'any, F>(&self, job: F)
+    where
+        F: FnOnce() + Send + 'any;
+}
+
+mod mt {
+    use super::*;
+    use core::mem::transmute;
+    use std::sync::{Mutex, Once};
+    use threadpool::ThreadPool;
+
+    pub fn da_pool() -> ThreadPool {
+        static INIT: Once = Once::new();
+        static mut POOL: *const Mutex<ThreadPool> =
+            0 as *const Mutex<ThreadPool>;
+
+        INIT.call_once(|| {
+            let pool = Mutex::new(ThreadPool::default());
+            unsafe { POOL = transmute(Box::new(pool)) };
+        });
+        unsafe { (*POOL).lock().unwrap().clone() }
+    }
+
+    type Thunk<'any> = Box<dyn FnOnce() + Send + 'any>;
+
+    impl ThreadPoolExt for ThreadPool {
+        fn joined_execute<'scope, F>(&self, job: F)
+        where
+            F: FnOnce() + Send + 'scope,
+        {
+            // Bypass 'lifetime limitations by brute force. It works,
+            // because we explicitly join the threads...
+            self.execute(unsafe {
+                transmute::<Thunk<'scope>, Thunk<'static>>(Box::new(job))
+            })
+        }
+    }
+}
 
 macro_rules! cfg_into_mut_chunks {
     ($e: expr, $f: expr) => {{
@@ -144,43 +186,63 @@ pub fn parallel_pippinger_wnaf<
     let mut scalar_digits = vec![0i64; digits_count * scalars.len()];
     cfg_into_mut_chunks!(scalar_digits, digits_count)
         .zip(scalars)
+        // .filter(|(_, s)| **s != Scalar256::ZERO)
         .for_each(|(chunk , scalar)| {
             make_digits_into(scalar, c, chunk);
         });
-    let mut window_sums = vec![TG1::ZERO; digits_count];
-    cfg_into_iter!(&mut window_sums)
-    .enumerate()
-    .for_each(|(i, window_sum)| {
-        let mut buckets = vec![TG1::ZERO; 1 << c];
-        for (digits, base) in scalar_digits.chunks(digits_count).zip(bases) {
-            use core::cmp::Ordering;
-            let scalar = digits[i];
-            match 0.cmp(&scalar) {
-                Ordering::Less => ProjAddAffine::add_assign_affine(&mut buckets[(scalar - 1) as usize], base),
-                Ordering::Greater => ProjAddAffine::sub_assign_affine(&mut buckets[(-scalar - 1) as usize], *base),
-                Ordering::Equal => (),
-            }
-        }
-
-        let mut running_sum = TG1::ZERO;
-        buckets.into_iter().rev().for_each(|b| {
-            running_sum.add_or_dbl_assign(&b);
-            window_sum.add_or_dbl_assign(&running_sum);
-        });
-    });
-
-    let lowest = window_sums.first().unwrap();
-    lowest.add(
-        &window_sums[1..]
-            .iter()
-            .rev()
-            .fold(TG1::ZERO, |mut total, sum_i| {
-                total.add_assign(sum_i);
-                for _ in 0..c {
-                    total.dbl_assign();
+    
+    let pool = mt::da_pool();
+    let ncpus = pool.max_count();
+    let scalar_digits_it = scalar_digits.chunks(digits_count).zip(bases);
+    
+    let (tx, rx) = channel();
+    for i in (0..digits_count).rev() {
+        let tx = tx.clone();
+        let i = i.clone();
+        let scalar_digits_it = scalar_digits_it.clone();
+        pool.joined_execute(move || {
+            let mut buckets = vec![TG1::ZERO; 1 << c];
+            for ( digits, base) in scalar_digits_it {
+                use core::cmp::Ordering;
+                let scalar = digits[i];
+                match 0.cmp(&scalar) {
+                    Ordering::Less => ProjAddAffine::add_assign_affine(&mut buckets[(scalar - 1) as usize], base),
+                    Ordering::Greater => ProjAddAffine::sub_assign_affine(&mut buckets[(-scalar - 1) as usize], *base),
+                    Ordering::Equal => (),
                 }
-                total
-            }))
+            }
+
+            let mut running_sum = TG1::ZERO;
+            let mut window_sum = TG1::ZERO;
+            buckets.into_iter().rev().for_each(|b| {
+                running_sum.add_or_dbl_assign(&b);
+                window_sum.add_or_dbl_assign(&running_sum);
+            });
+            tx.send(window_sum);
+        });
+    }
+
+    let mut total_window_sum = TG1::ZERO;
+    for _ in 0..digits_count {
+        total_window_sum.add_assign(&rx.recv().unwrap());
+        for _ in 0..c {
+            total_window_sum.dbl_assign();
+        }
+    }
+    total_window_sum
+
+    // let lowest = window_sums.first().unwrap();
+    // lowest.add(
+    //     &window_sums[1..]
+    //         .iter()
+    //         .rev()
+    //         .fold(TG1::ZERO, |mut total, sum_i| {
+    //             total.add_assign(sum_i);
+    //             for _ in 0..c {
+    //                 total.dbl_assign();
+    //             }
+    //             total
+    //         }))
 }
 
 // From: https://github.com/arkworks-rs/gemini/blob/main/src/kzg/msm/variable_base.rs#L20

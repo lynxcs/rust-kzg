@@ -1,0 +1,162 @@
+------------------------------------- ARKWORKS MSM -------------------------------------
+
+blob_to_kzg_commitment  time:   [57.555 ms 57.583 ms 57.620 ms]
+compute_kzg_proof       time:   [60.667 ms 60.723 ms 60.806 ms]
+verify_kzg_proof        time:   [1.7308 ms 1.7339 ms 1.7375 ms]
+compute_blob_kzg_proof  time:   [61.183 ms 61.266 ms 61.371 ms]
+verify_blob_kzg_proof   time:   [2.8372 ms 2.8401 ms 2.8435 ms]
+verify_blob_kzg_proof_batch/1
+                        time:   [2.8287 ms 2.8310 ms 2.8339 ms]
+                        thrpt:  [352.87  elem/s 353.23  elem/s 353.52  elem/s]
+verify_blob_kzg_proof_batch/2
+                        time:   [4.2917 ms 4.2995 ms 4.3109 ms]
+                        thrpt:  [463.94  elem/s 465.18  elem/s 466.01  elem/s]
+verify_blob_kzg_proof_batch/4
+                        time:   [7.1294 ms 7.1366 ms 7.1449 ms]
+                        thrpt:  [559.84  elem/s 560.49  elem/s 561.06  elem/s]
+verify_blob_kzg_proof_batch/8
+                        time:   [12.586 ms 12.597 ms 12.609 ms]
+                        thrpt:  [634.47  elem/s 635.08  elem/s 635.61  elem/s]
+verify_blob_kzg_proof_batch/16
+                        time:   [23.325 ms 23.355 ms 23.384 ms]
+                        thrpt:  [684.22  elem/s 685.09  elem/s 685.95  elem/s]
+verify_blob_kzg_proof_batch/32
+                        time:   [44.977 ms 45.147 ms 45.331 ms]
+                        thrpt:  [705.93  elem/s 708.79  elem/s 711.48  elem/s]
+verify_blob_kzg_proof_batch/64
+                        time:   [88.553 ms 89.136 ms 89.818 ms]
+                        thrpt:  [712.55  elem/s 718.00  elem/s 722.73  elem/s]
+
+------------------------------------- ARKMSM MSM -------------------------------------
+
+blob_to_kzg_commitment  time:   [60.762 ms 60.831 ms 60.911 ms]
+                        change: [+5.5047% +5.6399% +5.7861%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+compute_kzg_proof       time:   [37.409 ms 37.454 ms 37.506 ms]
+                        change: [-38.436% -38.320% -38.205%] (p = 0.00 < 0.05)
+                        Performance has improved.
+verify_kzg_proof        time:   [1.7893 ms 1.7908 ms 1.7924 ms]
+                        change: [+3.1658% +3.4199% +3.6959%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+compute_blob_kzg_proof  time:   [37.952 ms 37.987 ms 38.025 ms]
+                        change: [-38.116% -37.996% -37.891%] (p = 0.00 < 0.05)
+                        Performance has improved.
+verify_blob_kzg_proof   time:   [2.8657 ms 2.8691 ms 2.8729 ms]
+                        change: [+0.8522% +1.0230% +1.1991%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+verify_blob_kzg_proof_batch/1
+                        time:   [2.8401 ms 2.8422 ms 2.8446 ms]
+                        thrpt:  [351.55  elem/s 351.84  elem/s 352.11  elem/s]
+                 change:
+                        time:   [+0.2673% +0.3956% +0.5185%] (p = 0.00 < 0.05)
+                        thrpt:  [-0.5159% -0.3941% -0.2666%]
+                        Change within noise threshold.
+verify_blob_kzg_proof_batch/2
+                        time:   [7.5796 ms 7.5892 ms 7.5996 ms]
+                        thrpt:  [263.17  elem/s 263.53  elem/s 263.87  elem/s]
+                 change:
+                        time:   [+75.999% +76.516% +76.914%] (p = 0.00 < 0.05)
+                        thrpt:  [-43.476% -43.348% -43.181%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/4
+                        time:   [10.912 ms 10.924 ms 10.938 ms]
+                        thrpt:  [365.68  elem/s 366.15  elem/s 366.58  elem/s]
+                 change:
+                        time:   [+52.821% +53.075% +53.334%] (p = 0.00 < 0.05)
+                        thrpt:  [-34.783% -34.673% -34.564%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/8
+                        time:   [16.280 ms 16.299 ms 16.321 ms]
+                        thrpt:  [490.17  elem/s 490.83  elem/s 491.41  elem/s]
+                 change:
+                        time:   [+29.192% +29.389% +29.586%] (p = 0.00 < 0.05)
+                        thrpt:  [-22.831% -22.714% -22.596%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/16
+                        time:   [26.608 ms 26.646 ms 26.688 ms]
+                        thrpt:  [599.53  elem/s 600.46  elem/s 601.32  elem/s]
+                 change:
+                        time:   [+13.875% +14.093% +14.329%] (p = 0.00 < 0.05)
+                        thrpt:  [-12.533% -12.352% -12.184%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/32
+                        time:   [46.872 ms 46.927 ms 46.984 ms]
+                        thrpt:  [681.08  elem/s 681.90  elem/s 682.70  elem/s]
+                 change:
+                        time:   [+3.4962% +3.9426% +4.3558%] (p = 0.00 < 0.05)
+                        thrpt:  [-4.1740% -3.7930% -3.3781%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/64
+                        time:   [88.005 ms 88.170 ms 88.361 ms]
+                        thrpt:  [724.30  elem/s 725.87  elem/s 727.23  elem/s]
+                 change:
+                        time:   [-1.8614% -1.0844% -0.4052%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.4069% +1.0963% +1.8967%]
+                        Change within noise threshold.
+
+------------------------------------- BLST MSM -------------------------------------
+
+blob_to_kzg_commitment  time:   [40.482 ms 40.531 ms 40.593 ms]
+                        change: [-33.489% -33.371% -33.242%] (p = 0.00 < 0.05)
+                        Performance has improved.
+compute_kzg_proof       time:   [42.672 ms 42.690 ms 42.711 ms]
+                        change: [+13.815% +13.978% +14.126%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+verify_kzg_proof        time:   [923.44 µs 923.67 µs 923.94 µs]
+                        change: [-48.575% -48.450% -48.340%] (p = 0.00 < 0.05)
+                        Performance has improved.
+compute_blob_kzg_proof  time:   [43.227 ms 43.259 ms 43.303 ms]
+                        change: [+13.739% +13.878% +14.024%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+verify_blob_kzg_proof   time:   [1.9778 ms 1.9796 ms 1.9816 ms]
+                        change: [-31.115% -31.004% -30.900%] (p = 0.00 < 0.05)
+                        Performance has improved.
+verify_blob_kzg_proof_batch/1
+                        time:   [1.9812 ms 1.9825 ms 1.9839 ms]
+                        thrpt:  [504.07  elem/s 504.41  elem/s 504.74  elem/s]
+                 change:
+                        time:   [-30.321% -30.248% -30.176%] (p = 0.00 < 0.05)
+                        thrpt:  [+43.217% +43.365% +43.514%]
+                        Performance has improved.
+verify_blob_kzg_proof_batch/2
+                        time:   [3.2047 ms 3.2072 ms 3.2098 ms]
+                        thrpt:  [623.09  elem/s 623.60  elem/s 624.09  elem/s]
+                 change:
+                        time:   [-57.806% -57.740% -57.677%] (p = 0.00 < 0.05)
+                        thrpt:  [+136.28% +136.63% +137.00%]
+                        Performance has improved.
+verify_blob_kzg_proof_batch/4
+                        time:   [5.9188 ms 5.9291 ms 5.9445 ms]
+                        thrpt:  [672.89  elem/s 674.64  elem/s 675.81  elem/s]
+                 change:
+                        time:   [-45.852% -45.726% -45.593%] (p = 0.00 < 0.05)
+                        thrpt:  [+83.799% +84.252% +84.678%]
+                        Performance has improved.
+verify_blob_kzg_proof_batch/8
+                        time:   [10.696 ms 10.704 ms 10.714 ms]
+                        thrpt:  [746.72  elem/s 747.37  elem/s 747.95  elem/s]
+                 change:
+                        time:   [-34.432% -34.326% -34.237%] (p = 0.00 < 0.05)
+                        thrpt:  [+52.061% +52.267% +52.513%]
+                        Performance has improved.
+verify_blob_kzg_proof_batch/16
+                        time:   [20.769 ms 20.790 ms 20.811 ms]
+                        thrpt:  [768.83  elem/s 769.62  elem/s 770.36  elem/s]
+                 change:
+                        time:   [-22.123% -21.979% -21.846%] (p = 0.00 < 0.05)
+                        thrpt:  [+27.952% +28.170% +28.407%]
+                        Performance has improved.
+verify_blob_kzg_proof_batch/32
+                        time:   [40.433 ms 40.604 ms 40.819 ms]
+                        thrpt:  [783.95  elem/s 788.11  elem/s 791.44  elem/s]
+                 change:
+                        time:   [-13.854% -13.476% -12.985%] (p = 0.00 < 0.05)
+                        thrpt:  [+14.922% +15.574% +16.082%]
+                        Performance has improved.
+verify_blob_kzg_proof_batch/64
+                        time:   [79.358 ms 83.085 ms 90.259 ms]
+                        thrpt:  [709.07  elem/s 770.30  elem/s 806.48  elem/s]
+                 change:
+                        time:   [-10.022% -5.7671% +2.4215%] (p = 0.10 > 0.05)
+                        thrpt:  [-2.3642% +6.1201% +11.139%]
+                        No change in performance detected.
