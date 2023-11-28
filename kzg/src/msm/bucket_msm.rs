@@ -290,14 +290,14 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
         running_sums: &[TG1Affine],
         sum_of_sums: &[TG1Affine],
     ) -> TG1 {
-        self.calc_sum_of_sum_total(sum_of_sums).add(&self.calc_running_sum_total(running_sums))
+        self.calc_sum_of_sum_total(sum_of_sums).add_or_dbl(&self.calc_running_sum_total(running_sums))
     }
 
     fn calc_running_sum_total(&self, running_sums: &[TG1Affine]) -> TG1 {
         let mut running_sum_total = TG1::ZERO;
         for (i, running_sum) in running_sums.iter().enumerate().skip(1) {
             for _ in 0..i {
-                TProjAddAffine::add_assign_affine(&mut running_sum_total, running_sum);
+                TProjAddAffine::add_or_double_assign_affine(&mut running_sum_total, running_sum);
             }
         }
 
@@ -309,7 +309,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
 
     fn calc_sum_of_sum_total(&self, sum_of_sums: &[TG1Affine]) -> TG1 {
         let mut sum = TG1::ZERO;
-        sum_of_sums.iter().for_each(|p| TProjAddAffine::add_assign_affine(&mut sum, p));
+        sum_of_sums.iter().for_each(|p| TProjAddAffine::add_or_double_assign_affine(&mut sum, p));
         sum
     }
 

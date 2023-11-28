@@ -1,20 +1,22 @@
 extern crate alloc;
 
-use crate::types::fr::FsFr;
-use crate::types::g1::FsG1;
+use crate::types::fp::FsFp;
+use crate::types::{fr::FsFr, g1::FsG1Affine};
+use crate::types::g1::{FsG1, FsG1ProjAddAffine};
 use crate::types::g2::FsG2;
 use alloc::vec::Vec;
 use blst::{
     blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
     blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing,
 };
-use kzg::{G1Mul, PairingVerify, G1};
+use kzg::{G1Mul, PairingVerify, G1, cfg_into_iter, Scalar256, G1Affine};
 
 #[cfg(not(feature = "parallel"))]
 use blst::{
     blst_p1, blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine,
     limb_t,
 };
+use core::borrow::BorrowMut;
 #[cfg(not(feature = "parallel"))]
 use core::ptr;
 
@@ -80,35 +82,52 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
 
     #[cfg(not(feature = "parallel"))]
     {
-        let mut scratch: Vec<u8>;
-        unsafe {
-            scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len)];
-        }
+        let ark_points = FsG1Affine::into_affines(points);
+        let ark_scalars = {
+            cfg_into_iter!(scalars)
+                .take(len)
+                .map(|scalar| 
+                    {
+                        let mut blst_scalar = blst_scalar::default();
+                        unsafe {
+                            blst_scalar_from_fr(&mut blst_scalar, &scalar.0);
+                        }
+                        Scalar256::from_u8(&blst_scalar.b)
+                    }
+                )
+                .collect::<Vec<_>>()
+        };
 
-        let mut p_affine = vec![blst_p1_affine::default(); len];
-        let mut p_scalars = vec![blst_scalar::default(); len];
+        *out = kzg::msm::msm::VariableBaseMSM::multi_scalar_mul::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(&ark_points, &ark_scalars)
+        // let mut scratch: Vec<u8>;
+        // unsafe {
+        //     scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len)];
+        // }
 
-        let p_arg: [*const blst_p1; 2] = [&points[0].0, ptr::null()];
-        unsafe {
-            blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
-        }
+        // let mut p_affine = vec![blst_p1_affine::default(); len];
+        // let mut p_scalars = vec![blst_scalar::default(); len];
 
-        for i in 0..len {
-            unsafe { blst_scalar_from_fr(&mut p_scalars[i], &scalars[i].0) };
-        }
+        // let p_arg: [*const blst_p1; 2] = [&points[0].0, ptr::null()];
+        // unsafe {
+        //     blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
+        // }
 
-        let scalars_arg: [*const blst_scalar; 2] = [p_scalars.as_ptr(), ptr::null()];
-        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), ptr::null()];
-        unsafe {
-            blst_p1s_mult_pippenger(
-                &mut out.0,
-                points_arg.as_ptr(),
-                len,
-                scalars_arg.as_ptr() as *const *const u8,
-                255,
-                scratch.as_mut_ptr() as *mut limb_t,
-            );
-        }
+        // for i in 0..len {
+        //     unsafe { blst_scalar_from_fr(&mut p_scalars[i], &scalars[i].0) };
+        // }
+
+        // let scalars_arg: [*const blst_scalar; 2] = [p_scalars.as_ptr(), ptr::null()];
+        // let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), ptr::null()];
+        // unsafe {
+        //     blst_p1s_mult_pippenger(
+        //         &mut out.0,
+        //         points_arg.as_ptr(),
+        //         len,
+        //         scalars_arg.as_ptr() as *const *const u8,
+        //         255,
+        //         scratch.as_mut_ptr() as *mut limb_t,
+        //     );
+        // }
     }
 }
 

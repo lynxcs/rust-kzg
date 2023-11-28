@@ -85,7 +85,7 @@ pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {
 
     fn to_bytes(&self) -> [u8; 48];
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self;
+    fn add_or_dbl(&self, b: &Self) -> Self;
 
     fn is_inf(&self) -> bool;
 
@@ -238,6 +238,10 @@ impl Scalar256 {
     const ONE: Self = Self { data: [1, 0, 0, 0] };
     const ZERO: Self = Self { data: [0; 4] };
 
+    pub fn from_u64_s(arr: u64) -> Self {
+        Scalar256 { data: [arr, 0, 0, 0] }
+    }
+
     pub fn from_u64(arr: [u64; 4]) -> Self {
         Scalar256 { data: arr }
     }
@@ -263,7 +267,7 @@ impl Scalar256 {
     fn divn(&mut self, mut n: u32) {
         const N: usize = 4;
         if n >= (64 * N) as u32 {
-            *self = Self::ZERO;
+            *self = Self::from_u64_s(0);
             return;
         }
 

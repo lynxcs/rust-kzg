@@ -13,29 +13,28 @@ use std::ops::MulAssign;
 use rayon::prelude::*;
 
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
-    // if len < 8 {
-    //     *out = ArkG1::default();
-    //     for i in 0..len {
-    //         let tmp = points[i].mul(&scalars[i]);
-    //         *out = out.add_or_dbl(&tmp);
-    //     }
-    //     return;
-    // }
+    if len < 8 {
+        *out = ArkG1::default();
+        for i in 0..len {
+            let tmp = points[i].mul(&scalars[i]);
+            *out = out.add_or_dbl(&tmp);
+        }
+        return;
+    }
 
     let ark_points = ArkG1Affine::into_affines(points);
-    let ark_points: Vec<Affine<g1::Config>> = unsafe { core::mem::transmute(ark_points) };
+    // let ark_points: Vec<Affine<g1::Config>> = unsafe { core::mem::transmute(ark_points) };
     let ark_scalars = {
         cfg_into_iter!(scalars)
             .take(len)
-            // .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
-            .map(|scalar| BigInteger256::from(scalar.fr))
+            .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
+            // .map(|scalar| BigInteger256::from(scalar.fr))
             .collect::<Vec<_>>()
     };
 
-    // *out = kzg::msm::msm::VariableBaseMSM::multi_scalar_mul::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(&ark_points, &ark_scalars)
+    *out = kzg::msm::msm::VariableBaseMSM::multi_scalar_mul::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(&ark_points, &ark_scalars)
     // out.proj = VariableBaseMSM::msm_bigint(&ark_points, &ark_scalars);
-    out.proj = crate::arkmsm::msm::VariableBaseMSM::multi_scalar_mul(&ark_points, &ark_scalars);
-    // out.proj = arkmsm::
+    // out.proj = crate::arkmsm::msm::VariableBaseMSM::multi_scalar_mul(&ark_points, &ark_scalars);
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {

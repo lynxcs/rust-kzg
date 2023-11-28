@@ -134,7 +134,7 @@ where
             idx < self.inverses.len(),
             "index exceeds the max_batch_cnt, please increase max_batch_cnt during initialization!"
         );
-        if p.is_zero() | q.is_zero() {
+        if p.is_zero() || q.is_zero() {
             return;
         }
 
@@ -165,10 +165,10 @@ where
         assert!(idx < self.inverses.len(),
             "index exceeds the max_batch_cnt, please increase max_batch_cnt during initialization!"
         );
-        if p.is_zero() | q.is_zero() {
-            if !q.is_zero() {
-                *p = *q;
-            }
+        if q.is_zero() {
+            return;
+        } else if p.is_zero() {
+            *p = *q;
             return;
         }
 

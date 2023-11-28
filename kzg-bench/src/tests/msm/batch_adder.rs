@@ -79,12 +79,17 @@ pub fn test_phase_two_p_add_q<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp
 pub fn test_phase_two_p_add_p<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp>>() {
     let mut batch_adder = BatchAdder::<TG1, TGFp, TG1Affine>::new(4);
     let acc_proj = TG1::rand();
+    // let acc_proj = TG1::from_bytes(&[180, 100, 110, 26, 178, 124, 0, 160, 32, 73, 34, 58, 143, 58, 42, 253, 109, 115, 30, 187, 250, 105, 87, 92, 20, 52, 138, 74, 220, 53, 87, 230, 205, 140, 221, 30, 177, 65, 96, 179, 92, 116, 71, 234, 74, 149, 140, 221]).unwrap();
+    // eprintln!("{:?}", acc_proj.to_bytes());
     let p = TG1Affine::into_affine(&acc_proj);
     let mut acc = p;
 
-    batch_adder.inverses[0] = (p.y().add_fp(p.y())).inverse().unwrap();
+    let p_sqr = p.y().add_fp(p.y());
+    let p_sqr_inv = p_sqr.inverse().unwrap();
+
+    batch_adder.inverses[0] = p_sqr_inv;
     batch_adder.batch_add_phase_two(&mut acc, &p, 0);
-    assert_eq!(acc, TG1Affine::into_affine(&acc_proj.add(&p.to_proj())));
+    assert_eq!(acc.to_proj(), acc_proj.add_or_dbl(&p.to_proj()));
 }
 
 pub fn test_batch_add<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp>>() {

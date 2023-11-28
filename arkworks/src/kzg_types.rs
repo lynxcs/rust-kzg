@@ -316,7 +316,7 @@ impl G1 for ArkG1 {
         buff
     }
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&self, b: &Self) -> Self {
         Self {
             proj: self.proj + b.proj,
         }

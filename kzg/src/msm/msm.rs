@@ -5,6 +5,8 @@ use crate::{
 };
 use std::any::TypeId;
 
+use super::types::G1_SCALAR_SIZE;
+
 pub struct VariableBaseMSM;
 
 impl VariableBaseMSM {
@@ -23,14 +25,14 @@ impl VariableBaseMSM {
         }
     }
 
-    fn msm_slice(mut scalar: Scalar256, slices: &mut [u32], window_bits: u32) {
+    pub fn msm_slice(mut scalar: Scalar256, slices: &mut [u32], window_bits: u32) {
         assert!(window_bits <= 31); // reserve one bit for marking signed slices
 
         let mut carry = 0;
         let total = 1 << window_bits;
         let half = total >> 1;
         slices.iter_mut().for_each(|el| {
-            *el = (scalar.data[0] % (1 << window_bits)) as u32;
+            *el = (scalar.data.as_ref()[0] % (1 << window_bits)) as u32;
             scalar.divn(window_bits);
 
             *el += carry;
@@ -99,98 +101,37 @@ impl VariableBaseMSM {
         bucket_msm.batch_reduce()
     }
 
-    // fn multi_scalar_mul_general<P: Parameters>(
-    //     points: &[Affine<P>],
-    //     scalars: &[BigInt<P>],
-    //     window_bits: u32,
-    //     max_batch: u32,
-    //     max_collisions: u32,
-    // ) -> Projective<P> {
-    //     let scalar_size = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE as u32;
-    //     let num_slices: usize = ((scalar_size + window_bits - 1) / window_bits) as usize;
-    //     let mut bucket_msm =
-    //         BucketMSM::<P>::new(scalar_size, window_bits, max_batch, max_collisions);
+    fn multi_scalar_mul_general<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>, TFr: Fr>(
+        points: &[TG1Affine],
+        scalars: &[Scalar256],
+        window_bits: u32,
+        max_batch: u32,
+        max_collisions: u32,
+    ) -> TG1 {
+        let num_slices: usize = ((G1_SCALAR_SIZE + window_bits - 1) / window_bits) as usize;
+        let mut bucket_msm =
+            BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(G1_SCALAR_SIZE, window_bits, max_batch, max_collisions);
 
-    //     let mut slices = vec![0u32; num_slices];
-    //     scalars
-    //         .iter()
-    //         .zip(points)
-    //         .filter(|(s, _)| !s.is_zero())
-    //         .for_each(|(&scalar, point)| {
-    //             Self::msm_slice::<P>(scalar, &mut slices[..num_slices], window_bits);
-    //             bucket_msm.process_point_and_slices(point, &slices[..num_slices]);
-    //         });
+        let mut slices = vec![0u32; num_slices];
+        scalars
+            .iter()
+            .zip(points)
+            .filter(|(s, _)| !s.is_zero())
+            .for_each(|(&scalar, point)| {
+                Self::msm_slice(scalar, &mut slices[..num_slices], window_bits);
+                bucket_msm.process_point_and_slices(point, &slices[..num_slices]);
+            });
 
-    //     bucket_msm.process_complete();
-    //     bucket_msm.batch_reduce()
-    // }
-
-    // pub fn multi_scalar_mul_custom<P: Parameters>(
-    //     points: &[Affine<P>],
-    //     scalars: &[BigInt<P>],
-    //     window_bits: u32,
-    //     max_batch: u32,
-    //     max_collisions: u32,
-    //     glv_enabled: bool,
-    // ) -> Projective<P> {
-    //     assert!(
-    //         window_bits as usize > GROUP_SIZE_IN_BITS,
-    //         "Window_bits must be greater than the default log(group size)"
-    //     );
-    //     if glv_enabled {
-    //         assert!(
-    //             TypeId::of::<P>() == TypeId::of::<G1Parameters>(),
-    //             "Glv is only supported for bls12-381 curve!"
-    //         );
-    //         Self::multi_scalar_mul_g1_glv(points, scalars, window_bits, max_batch, max_collisions)
-    //     } else {
-    //         Self::multi_scalar_mul_general(points, scalars, window_bits, max_batch, max_collisions)
-    //     }
-    // }
+        bucket_msm.process_complete();
+        bucket_msm.batch_reduce()
+    }
 
     pub fn multi_scalar_mul<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>, TFr: Fr>(
         points: &[TG1Affine],
         scalars: &[Scalar256],
     ) -> TG1 {
         let opt_window_size = Self::get_opt_window_size(log2_u64(points.len()) as u32);
-        Self::multi_scalar_mul_g1_glv::<TG1, TG1Fp, TG1Affine, TProjAddAffine, TFr>(points, scalars, opt_window_size, 2048, 256)
+        // Self::multi_scalar_mul_g1_glv::<TG1, TG1Fp, TG1Affine, TProjAddAffine, TFr>(points, scalars, opt_window_size, 2048, 256)
+        Self::multi_scalar_mul_general::<TG1, TG1Fp, TG1Affine, TProjAddAffine, TFr>(points, scalars, opt_window_size, 2048, 256)
     }
 }
-
-// #[cfg(test)]
-// mod collision_method_pippenger_tests {
-//     use super::*;
-//     use ark_bls12_381::g1::{Config, self};
-
-//     #[test]
-//     fn test_msm_slice_window_size_1() {
-//         let scalar = G1BigInt::from(0b101 as u32);
-//         let mut slices: Vec<u32> = vec![0; 3];
-//         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 1);
-//         // print!("slices {:?}\n", slices);
-//         assert!(slices.iter().eq([1, 0, 1].iter()));
-//     }
-//     #[test]
-//     fn test_msm_slice_window_size_2() {
-//         let scalar = G1BigInt::from(0b000110 as u32);
-//         let mut slices: Vec<u32> = vec![0; 3];
-//         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 2);
-//         assert!(slices.iter().eq([2, 1, 0].iter()));
-//     }
-
-//     #[test]
-//     fn test_msm_slice_window_size_3() {
-//         let scalar = G1BigInt::from(0b010111000 as u32);
-//         let mut slices: Vec<u32> = vec![0; 3];
-//         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 3);
-//         assert!(slices.iter().eq([0, 0x80000001, 3].iter()));
-//     }
-
-//     #[test]
-//     fn test_msm_slice_window_size_16() {
-//         let scalar = G1BigInt::from(0x123400007FFF as u64);
-//         let mut slices: Vec<u32> = vec![0; 3];
-//         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 16);
-//         assert!(slices.iter().eq([0x7FFF, 0, 0x1234].iter()));
-//     }
-// }
