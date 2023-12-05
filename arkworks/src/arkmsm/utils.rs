@@ -1,4 +1,4 @@
-use ark_ec::{CurveGroup, AffineRepr};
+use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{PrimeField, UniformRand};
 
 #[allow(clippy::type_complexity)]
