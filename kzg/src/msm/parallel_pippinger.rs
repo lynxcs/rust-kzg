@@ -1,5 +1,7 @@
 use std::sync::mpsc::channel;
 
+use alloc::vec;
+
 use crate::{
     cfg_into_iter, common_utils::log2_u64, msm::thread_pool::*, G1Affine, G1Fp, G1ProjAddAffine,
     Scalar256, G1,
