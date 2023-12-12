@@ -6,13 +6,13 @@ use core::{
 use alloc::sync::Arc;
 use std::sync::{mpsc::channel, Barrier};
 
-use crate::{msm::tilling_pippenger_ops::num_bits, G1Affine, G1Fp, G1GetFp, Scalar256, G1};
+use crate::{msm::tiling_pippenger_ops::num_bits, G1Affine, G1Fp, G1GetFp, Scalar256, G1};
 
 use super::{
     cell::Cell,
     thread_pool::{da_pool, ThreadPoolExt},
-    tilling_pippenger_ops::{
-        p1s_tile_pippenger_pub, pippenger_window_size, tilling_pippenger, P1XYZZ,
+    tiling_pippenger_ops::{
+        p1s_tile_pippenger_pub, pippenger_window_size, tiling_pippenger, P1XYZZ,
     },
 };
 
@@ -84,7 +84,7 @@ pub fn tiling_parallel_pippenger<
     let ncpus = pool.max_count();
 
     if ncpus < 2 || npoints < 32 {
-        return tilling_pippenger(points, scalars);
+        return tiling_pippenger(points, scalars);
     }
 
     let (nx, ny, window) = breakdown(pippenger_window_size(npoints), ncpus);

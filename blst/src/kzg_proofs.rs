@@ -28,7 +28,7 @@ impl PairingVerify<FsG1, FsG2> for FsG1 {
 }
 
 #[cfg(feature = "parallel")]
-use kzg::msm::tilling_parallel_pippenger::{parallel_affine_conv, tiling_parallel_pippenger};
+use kzg::msm::tiling_parallel_pippenger::{parallel_affine_conv, tiling_parallel_pippenger};
 
 pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
     if len < 8 {
@@ -59,8 +59,8 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
 
     #[cfg(not(feature = "parallel"))]
     {
-        let ark_points = FsG1Affine::into_affines(points);
-        let ark_scalars = {
+        let points = FsG1Affine::into_affines(points);
+        let scalars = {
             scalars
                 .iter()
                 .take(len)
@@ -74,8 +74,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 .collect::<Vec<_>>()
         };
         *out = VariableBaseMSM::multi_scalar_mul::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
-            &ark_points,
-            &ark_scalars,
+            &points, &scalars,
         )
     }
 }

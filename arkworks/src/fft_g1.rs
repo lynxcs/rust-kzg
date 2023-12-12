@@ -6,7 +6,7 @@ use crate::kzg_types::{ArkFr, ArkG1, ArkG1Affine};
 use crate::kzg_types::ArkG1ProjAddAffine;
 
 #[cfg(feature = "parallel")]
-use kzg::msm::tilling_parallel_pippenger::tiling_parallel_pippenger;
+use kzg::msm::tiling_parallel_pippenger::tiling_parallel_pippenger;
 
 #[cfg(not(feature = "parallel"))]
 use kzg::msm::arkmsm::arkmsm_msm::VariableBaseMSM;
