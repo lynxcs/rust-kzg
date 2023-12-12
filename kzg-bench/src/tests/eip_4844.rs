@@ -652,8 +652,11 @@ pub fn test_vectors_compute_blob_kzg_proof<
     assert!(!test_files.is_empty());
 
     for test_file in test_files {
-        let yaml_data = fs::read_to_string(test_file).unwrap();
+        let pr = test_file.display();
+        let yaml_data = fs::read_to_string(test_file.clone()).unwrap();
         let test: compute_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
+
+        println!("Thing: {pr}");
 
         let input = (
             match bytes_to_blob(&test.input.get_blob_bytes()) {
@@ -674,11 +677,13 @@ pub fn test_vectors_compute_blob_kzg_proof<
 
         match compute_blob_kzg_proof(&input.0, &input.1, &ts) {
             Ok(proof) => {
-                let expected_commitment = test
-                    .get_output_bytes()
-                    .and_then(|commitment_bytes| TG1::from_bytes(&commitment_bytes).ok());
+                let expected_commitment = test.get_output_bytes().ok_or("Failed to get bytes?");
+                let expected_commitment = TG1::from_bytes(&expected_commitment.unwrap());
+                // let expected_commitment = test
+                //     .get_output_bytes()
+                //     .and_then(|commitment_bytes| Some(TG1::from_bytes(&commitment_bytes).unwrap()));
 
-                assert!(proof.equals(&expected_commitment.unwrap_or_default()));
+                assert!(proof.equals(&expected_commitment.unwrap()));
             }
             Err(_) => {
                 assert!(test.get_output_bytes().is_none());

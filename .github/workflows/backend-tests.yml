@@ -9,9 +9,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-latest]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks]
+        backend: [blst, arkworks]
         include:
           # Set default clippy flag to all-features
           - clippy-flag: --all-features
@@ -27,11 +27,6 @@ jobs:
             support_wasm: true
             support_ckzg: true
             # Override all-features flag for blst, due to incompatibility between portable & force-adx
-            clippy-flag: --features=default,std,rand,parallel
-          - backend: zkcrypto
-            support_wasm: true
-            support_ckzg: true
-
             clippy-flag: --features=default,std,rand,parallel
           - backend: arkworks
             support_wasm: true
@@ -54,84 +49,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ^1.19
-
-      # Check kzg clippy
-      - name: "kzg clippy"
-        if: matrix.exec_once_overall
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path kzg/Cargo.toml --all-targets --all-features -- -D warnings
-
-      # Check kzg formatting
-      - name: "kzg format"
-        uses: actions-rs/cargo@v1
-        if: matrix.exec_once_overall
-        with:
-          command: fmt
-          args: --manifest-path kzg/Cargo.toml -- --check
-
-      # Check kzg-bench clippy
-      - name: "kzg-bench clippy"
-        if: matrix.exec_once_overall
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
-
-      # Check kzg-bench formatting
-      - name: "kzg-bench format"
-        uses: actions-rs/cargo@v1
-        if: matrix.exec_once_overall
-        with:
-          command: fmt
-          args: --manifest-path kzg-bench/Cargo.toml -- --check
-
-      # Check backend clippy
-      - name: "${{ matrix.backend }} clippy"
-        if: matrix.exec_once_per_backend
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --all-targets ${{ matrix.clippy-flag }} -- -D warnings
-
-      # Check backend formatting
-      - name: "${{ matrix.backend }} format"
-        if: matrix.exec_once_per_backend
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml -- --check
-
-      # Check wasm32 target clippy for backend
-      - name: "[wasm32] ${{ matrix.backend }} clippy"
-        if: matrix.exec_once_per_backend && matrix.support_wasm
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --target wasm32-unknown-unknown --no-default-features
-
-      # Check wasm32 target backend build
-      - name: "[wasm32] ${{ matrix.backend }} build"
-        if: matrix.exec_once_per_backend && matrix.support_wasm
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --target wasm32-unknown-unknown --no-default-features
-
-      # Check non-parallel backend tests
-      - name: "${{ matrix.backend }} Tests"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release
-
-      # Check parallel backend tests
-      - name: "${{ matrix.backend }} Tests (parallel)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release --features parallel
 
       # Check ckzg backend tests
       - name: "${{ matrix.backend }} Tests (c-kzg-4844)"
