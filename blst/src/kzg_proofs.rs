@@ -7,6 +7,9 @@ use crate::types::{fr::FsFr, g1::FsG1Affine};
 #[cfg(not(feature = "parallel"))]
 use crate::types::g1::FsG1ProjAddAffine;
 
+#[cfg(not(feature = "parallel"))]
+use kzg::msm::arkmsm::arkmsm_msm::VariableBaseMSM;
+
 use crate::types::g2::FsG2;
 use alloc::vec::Vec;
 use blst::{
@@ -70,7 +73,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 })
                 .collect::<Vec<_>>()
         };
-        *out = kzg::msm::arkmsm_msm::VariableBaseMSM::multi_scalar_mul::<
+        *out = VariableBaseMSM::multi_scalar_mul::<
             FsG1,
             FsFp,
             FsG1Affine,

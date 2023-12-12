@@ -3,13 +3,15 @@ use core::marker::PhantomData;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+use alloc::vec;
+
 use crate::{
     cfg_into_iter,
-    msm::{
+    msm::types::{GROUP_SIZE, GROUP_SIZE_IN_BITS},
+    msm::arkmsm::{
         batch_adder::BatchAdder,
         bitmap::Bitmap,
         glv::endomorphism,
-        types::{GROUP_SIZE, GROUP_SIZE_IN_BITS},
     },
     G1Affine, G1Fp, G1ProjAddAffine, G1,
 };
@@ -53,11 +55,11 @@ impl<
     ) -> Self {
         // TODO: Check if these can be turned into consts
         let num_windows = (scalar_bits + window_bits - 1) / window_bits;
-        let batch_size = std::cmp::max(8192, max_batch_cnt);
+        let batch_size = core::cmp::max(8192, max_batch_cnt);
         let bucket_bits = window_bits - 1; // half buckets needed because of signed-bucket-index
         let bucket_size = num_windows << bucket_bits;
         // size of batch_adder will be the max of batch_size and num_windows * groups per window
-        let batch_adder_size = std::cmp::max(batch_size, bucket_size >> GROUP_SIZE_IN_BITS);
+        let batch_adder_size = core::cmp::max(batch_size, bucket_size >> GROUP_SIZE_IN_BITS);
 
         BucketMSM {
             num_windows,

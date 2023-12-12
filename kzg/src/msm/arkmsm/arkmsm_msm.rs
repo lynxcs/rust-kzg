@@ -1,9 +1,7 @@
 use crate::{
-    common_utils::log2_u64, msm::bucket_msm::BucketMSM, msm::glv::decompose,
-    msm::types::G1_SCALAR_SIZE_GLV, Fr, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1,
+    common_utils::log2_u64, msm::arkmsm::bucket_msm::BucketMSM, msm::arkmsm::glv::decompose,
+    msm::types::{G1_SCALAR_SIZE_GLV, G1_SCALAR_SIZE}, Fr, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1,
 };
-
-use super::types::G1_SCALAR_SIZE;
 
 pub struct VariableBaseMSM;
 
