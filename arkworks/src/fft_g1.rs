@@ -8,6 +8,9 @@ use crate::kzg_types::ArkG1ProjAddAffine;
 #[cfg(feature = "parallel")]
 use kzg::msm::tilling_parallel_pippinger::tiling_parallel_pippinger;
 
+#[cfg(not(feature = "parallel"))]
+use kzg::msm::arkmsm::arkmsm_msm::VariableBaseMSM;
+
 use ark_ff::BigInteger256;
 
 use kzg::{cfg_into_iter, Fr as KzgFr, G1Affine, G1Mul, Scalar256};
@@ -50,7 +53,7 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[ArkFr
                 .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
                 .collect::<Vec<_>>()
         };
-        *out = kzg::msm::arkmsm_msm::VariableBaseMSM::multi_scalar_mul::<_, _, _, ArkG1ProjAddAffine>(
+        *out = VariableBaseMSM::multi_scalar_mul::<_, _, _, ArkG1ProjAddAffine>(
             &ark_points,
             &ark_scalars,
         );
