@@ -14,12 +14,14 @@ threadpool = "^1.8.1"
 default = [
     "rand",
     "std",
-]
-rand = []
-std = [
-    "sha2/std"
+    "arkmsm",
 ]
 parallel = [
     "dep:rayon",
     "dep:num_cpus"
 ]
+std = [
+    "sha2/std"
+]
+rand = []
+arkmsm = []
