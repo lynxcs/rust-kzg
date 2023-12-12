@@ -371,7 +371,7 @@ pub fn p1s_tile_pippenger<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine
     p1_integrate_buckets(ret, buckets, cbits - 1);
 }
 
-pub fn tilling_pippinger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
+pub fn tilling_pippenger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
     points: &[TG1Affine],
     scalars: &[Scalar256],
 ) -> TG1 {

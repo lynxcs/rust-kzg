@@ -28,7 +28,7 @@ impl PairingVerify<FsG1, FsG2> for FsG1 {
 }
 
 #[cfg(feature = "parallel")]
-use kzg::msm::tilling_parallel_pippinger::{parallel_affine_conv, tiling_parallel_pippinger};
+use kzg::msm::tilling_parallel_pippenger::{parallel_affine_conv, tiling_parallel_pippenger};
 
 pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
     if len < 8 {
@@ -54,7 +54,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 Scalar256::from_u8(&scalar.b)
             })
             .collect::<Vec<_>>();
-        *out = tiling_parallel_pippinger(&points, scalars.as_slice());
+        *out = tiling_parallel_pippenger(&points, scalars.as_slice());
     }
 
     #[cfg(not(feature = "parallel"))]
