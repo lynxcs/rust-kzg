@@ -249,19 +249,20 @@ fn p1_integrate_buckets<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(
     buckets: &mut [P1XYZZ<TFp>],
     wbits: usize,
 ) {
-    let mut ret = P1XYZZ::<TFp>::default();
-    let mut acc = P1XYZZ::<TFp>::default();
+    let mut n = (1usize << wbits) - 1;
+    let mut ret = buckets[n];
+    let mut acc = buckets[n];
 
-    let n = (1usize << wbits) - 1;
-    if type_is_zero(&buckets[n]) == 0 {
-        acc = buckets[n];
-        ret = buckets[n];
-        type_zero(&mut buckets[n]);
-    }
-    for x in buckets.iter_mut().rev().skip(1) {
-        if type_is_zero(x) == 0 {
-            p1_dadd(&mut acc, x);
-            type_zero(x);
+    type_zero(&mut buckets[n]);
+    loop {
+        if n == 0 {
+            break;
+        }
+        n -= 1;
+
+        if type_is_zero(&buckets[n]) == 0 {
+            p1_dadd(&mut acc, &buckets[n]);
+            type_zero(&mut buckets[n]);
         }
         p1_dadd(&mut ret, &acc);
     }
