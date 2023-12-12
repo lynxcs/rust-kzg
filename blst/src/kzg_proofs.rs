@@ -73,12 +73,10 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 })
                 .collect::<Vec<_>>()
         };
-        *out = VariableBaseMSM::multi_scalar_mul::<
-            FsG1,
-            FsFp,
-            FsG1Affine,
-            FsG1ProjAddAffine,
-        >(&ark_points, &ark_scalars)
+        *out = VariableBaseMSM::multi_scalar_mul::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
+            &ark_points,
+            &ark_scalars,
+        )
     }
 }
 

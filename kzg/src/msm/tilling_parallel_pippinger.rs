@@ -3,15 +3,17 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use std::sync::{mpsc::channel, Barrier};
 use alloc::sync::Arc;
+use std::sync::{mpsc::channel, Barrier};
 
-use crate::{G1Affine, G1Fp, G1GetFp, Scalar256, G1, msm::tilling_pippinger_ops::num_bits};
+use crate::{msm::tilling_pippinger_ops::num_bits, G1Affine, G1Fp, G1GetFp, Scalar256, G1};
 
 use super::{
     cell::Cell,
     thread_pool::{da_pool, ThreadPoolExt},
-    tilling_pippinger_ops::{p1s_tile_pippenger_pub, P1XYZZ, pippenger_window_size, tilling_pippinger},
+    tilling_pippinger_ops::{
+        p1s_tile_pippenger_pub, pippenger_window_size, tilling_pippinger, P1XYZZ,
+    },
 };
 
 struct Tile {

@@ -7,12 +7,8 @@ use alloc::vec;
 
 use crate::{
     cfg_into_iter,
+    msm::arkmsm::{batch_adder::BatchAdder, bitmap::Bitmap, glv::endomorphism},
     msm::types::{GROUP_SIZE, GROUP_SIZE_IN_BITS},
-    msm::arkmsm::{
-        batch_adder::BatchAdder,
-        bitmap::Bitmap,
-        glv::endomorphism,
-    },
     G1Affine, G1Fp, G1ProjAddAffine, G1,
 };
 
