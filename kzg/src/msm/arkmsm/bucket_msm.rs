@@ -4,6 +4,7 @@ use core::marker::PhantomData;
 use rayon::prelude::*;
 
 use alloc::vec;
+use alloc::vec::Vec;
 
 use crate::{
     cfg_into_iter,

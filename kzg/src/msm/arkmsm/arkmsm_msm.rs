@@ -6,6 +6,8 @@ use crate::{
     Fr, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1,
 };
 
+use alloc::vec;
+
 pub struct VariableBaseMSM;
 
 impl VariableBaseMSM {

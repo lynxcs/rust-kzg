@@ -2,6 +2,8 @@ use core::mem::size_of;
 
 use crate::{G1Affine, G1Fp, G1GetFp, Scalar256, G1};
 
+use alloc::vec;
+
 const fn is_zero(val: u64) -> u64 {
     (!val & (val.wrapping_sub(1))) >> (u64::BITS - 1)
 }
